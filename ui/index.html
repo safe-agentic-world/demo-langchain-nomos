@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Northwind Support</title>
+    <link rel="stylesheet" href="/ui/styles.css">
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">Northwind Support</p>
+          <h1>How Can We Help With Your Order?</h1>
+          <p class="lede">
+            Ask about an order, check whether it is eligible for a refund, or request a refund for a delivered item.
+            The assistant reviews your order details and gives a clear next step.
+          </p>
+        </div>
+      </section>
+
+      <section class="scenario-grid">
+        <button class="scenario-card active" data-task="Show me order ORD-1001.">
+          <strong>View Order</strong>
+        </button>
+        <button class="scenario-card" data-task="Show me order ORD-1001 and tell me whether it is eligible for a refund.">
+          <strong>Check Refund Eligibility</strong>
+        </button>
+        <button class="scenario-card" data-task="Review order ORD-1001 and submit a refund because the headphones arrived damaged.">
+          <strong>Request Refund</strong>
+        </button>
+      </section>
+
+      <section class="controls card request-card">
+        <label for="task">Tell us what you need help with</label>
+        <textarea id="task" rows="3">Show me order ORD-1001.</textarea>
+        <div class="buttons">
+          <button id="run-assistant" class="button button-primary">Ask Northwind Support</button>
+        </div>
+        <p id="status" class="status">Ready when you are.</p>
+      </section>
+
+      <section class="results-grid">
+        <article class="card response-card wide-card">
+          <h2>Support Response</h2>
+          <div id="summary" class="summary empty">Your answer from Northwind Support will appear here.</div>
+        </article>
+
+        <article class="card">
+          <h2>Your Order</h2>
+          <div id="order" class="detail-panel empty">We will show your order details here.</div>
+        </article>
+
+        <article class="card">
+          <h2>Refund Status</h2>
+          <div id="refund-result" class="detail-panel empty">If a refund is requested, the latest status will appear here.</div>
+        </article>
+
+        <article class="card">
+          <h2>Additional Compensation</h2>
+          <div id="compensation-result" class="detail-panel empty">If extra compensation is granted, the latest status will appear here.</div>
+        </article>
+      </section>
+    </main>
+
+    <script src="/ui/app.js"></script>
+  </body>
+</html>

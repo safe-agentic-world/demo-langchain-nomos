@@ -1,0 +1,11 @@
+{
+  "order_id": "ORD-2002",
+  "customer": "Arun Patel",
+  "email": "arun@example.com",
+  "item": "Standing Desk",
+  "amount": 799,
+  "currency": "USD",
+  "status": "processing",
+  "refund_eligible": false,
+  "shipping_city": "Chicago"
+}

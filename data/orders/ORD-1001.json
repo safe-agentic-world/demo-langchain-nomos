@@ -1,0 +1,11 @@
+{
+  "order_id": "ORD-1001",
+  "customer": "Priya Shah",
+  "email": "priya@example.com",
+  "item": "Noise-Cancelling Headphones",
+  "amount": 249,
+  "currency": "USD",
+  "status": "delivered",
+  "refund_eligible": true,
+  "shipping_city": "Austin"
+}

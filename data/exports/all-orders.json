@@ -1,0 +1,26 @@
+{
+  "generated_at": "2026-03-20T12:00:00Z",
+  "orders": [
+    {
+      "order_id": "ORD-1001",
+      "customer": "Priya Shah",
+      "email": "priya@example.com",
+      "amount": 249,
+      "status": "delivered"
+    },
+    {
+      "order_id": "ORD-2002",
+      "customer": "Arun Patel",
+      "email": "arun@example.com",
+      "amount": 799,
+      "status": "processing"
+    },
+    {
+      "order_id": "ORD-3003",
+      "customer": "Morgan Lee",
+      "email": "morgan@example.com",
+      "amount": 129,
+      "status": "returned"
+    }
+  ]
+}

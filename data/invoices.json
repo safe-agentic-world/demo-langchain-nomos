@@ -1,0 +1,12 @@
+{
+  "invoices": [
+    {
+      "invoice_id": "INV-1001",
+      "vendor": "Acme Hosting",
+      "amount": 5000,
+      "currency": "USD",
+      "destination_account": "acct_demo_vendor_123",
+      "status": "pending"
+    }
+  ]
+}
