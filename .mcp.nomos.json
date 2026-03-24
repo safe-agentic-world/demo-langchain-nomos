@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "northwind-retail": {
+      "transport": "stdio",
+      "command": "C:\\Users\\prudh\\go\\bin\\nomos.exe",
+      "args": [
+        "mcp",
+        "-c",
+        "nomos/config.retail-agent.future.json"
+      ]
+    }
+  }
+}

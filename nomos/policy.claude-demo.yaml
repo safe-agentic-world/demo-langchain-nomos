@@ -1,0 +1,80 @@
+version: v1
+rules:
+  - id: deny-root-env-read
+    action_type: fs.read
+    resource: file://workspace/.env
+    decision: DENY
+  - id: deny-nested-env-read
+    action_type: fs.read
+    resource: file://workspace/**/.env
+    decision: DENY
+  - id: deny-root-env-variant-read
+    action_type: fs.read
+    resource: file://workspace/.env.*
+    decision: DENY
+  - id: deny-nested-env-variant-read
+    action_type: fs.read
+    resource: file://workspace/**/.env.*
+    decision: DENY
+  - id: deny-root-key-read
+    action_type: fs.read
+    resource: file://workspace/*.key
+    decision: DENY
+  - id: deny-nested-key-read
+    action_type: fs.read
+    resource: file://workspace/**/*.key
+    decision: DENY
+  - id: deny-root-pem-read
+    action_type: fs.read
+    resource: file://workspace/*.pem
+    decision: DENY
+  - id: deny-nested-pem-read
+    action_type: fs.read
+    resource: file://workspace/**/*.pem
+    decision: DENY
+  - id: deny-git-dir-read
+    action_type: fs.read
+    resource: file://workspace/.git/**
+    decision: DENY
+  - id: allow-workspace-read
+    action_type: fs.read
+    resource: file://workspace/**
+    decision: ALLOW
+  - id: deny-env-write
+    action_type: fs.write
+    resource: file://workspace/**/.env*
+    decision: DENY
+  - id: deny-git-dir-write
+    action_type: fs.write
+    resource: file://workspace/.git/**
+    decision: DENY
+  - id: allow-workspace-write
+    action_type: fs.write
+    resource: file://workspace/**
+    decision: ALLOW
+    obligations:
+      sandbox_mode: local
+  - id: allow-apply-patch
+    action_type: repo.apply_patch
+    resource: repo://local/workspace
+    decision: ALLOW
+    obligations:
+      sandbox_mode: local
+  - id: deny-git-push
+    action_type: process.exec
+    resource: file://workspace/
+    decision: DENY
+    exec_match:
+      argv_patterns:
+        - ["git", "push"]
+        - ["git", "push", "**"]
+  - id: allow-git-exec
+    action_type: process.exec
+    resource: file://workspace/
+    decision: ALLOW
+    exec_match:
+      argv_patterns:
+        - ["git"]
+        - ["git", "**"]
+    obligations:
+      sandbox_mode: local

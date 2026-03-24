@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "nomos-demo": {
+      "command": "C:\\Users\\prudh\\go\\bin\\nomos.exe",
+      "args": [
+        "mcp",
+        "-c",
+        "C:\\Users\\prudh\\repos\\safe-agentic-world\\demo-langchain-nomos\\nomos\\config.claude-demo.json"
+      ]
+    }
+  }
+}

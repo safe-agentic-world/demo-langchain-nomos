@@ -1,23 +1,18 @@
 # Demo Runbook
 
-This runbook explains how to run and use the intentionally insecure pre-Nomos retail customer support assistant.
-
 Repo:
 `C:\Users\prudh\repos\safe-agentic-world\demo-langchain-nomos`
 
-What the assistant can do:
-- look up order details
-- answer refund-eligibility questions
-- submit a refund request for an eligible order
-- grant extra mock compensation when the customer asks for it
+This runbook covers four separate demo tracks:
 
-Important note:
-- this repo is still the insecure baseline and does not call Nomos yet
-- the refund and compensation paths are fully mocked
-- there is no real payment or real money movement
-- this baseline exists so it can later be contrasted with a Nomos-governed version
+1. retail support agent before Nomos
+2. retail support agent after Nomos
+3. Claude Code with Nomos against this repo
+4. Codex with Nomos against this repo
 
-Sample orders used in the demo:
+The retail app itself stays MCP-native and does not hardcode Nomos. The only thing that changes between the retail before-Nomos and after-Nomos flows is the MCP server config the app points to.
+
+Sample orders:
 - `ORD-1001`: delivered, refund eligible
 - `ORD-2002`: processing, not refund eligible
 
@@ -56,21 +51,69 @@ If `.env` does not exist yet:
 Copy-Item .env.example .env
 ```
 
-Set at least:
+The current baseline `.env.example` is:
 
 ```text
-OPENAI_API_KEY=your-openai-api-key
+OPENAI_API_KEY=
 OPENAI_MODEL=gpt-4o-mini
 OPENAI_BASE_URL=
 REFUND_BASE_URL=http://127.0.0.1:8002
 COMP_SERVICE_BASE_URL=http://127.0.0.1:8002
+MCP_CONFIG_PATH=.mcp.json
 ```
 
-Notes:
-- leave `OPENAI_BASE_URL` empty for standard OpenAI usage
-- both mock endpoints default to the same local support service on port `8002`
+Set `OPENAI_API_KEY` in your local `.env`.
 
-## 5. Start The Mock Support Service
+MCP mode switch:
+- before Nomos: `MCP_CONFIG_PATH=.mcp.json`
+- after Nomos: `MCP_CONFIG_PATH=.mcp.nomos.json`
+
+Only these env vars are used by the current app:
+- `OPENAI_API_KEY`
+- `OPENAI_MODEL`
+- `OPENAI_BASE_URL`
+- `REFUND_BASE_URL`
+- `COMP_SERVICE_BASE_URL`
+- `MCP_CONFIG_PATH`
+
+## 5. Understand The MCP Wiring
+
+Direct retail MCP config:
+- [`.mcp.json`](C:/Users/prudh/repos/safe-agentic-world/demo-langchain-nomos/.mcp.json)
+
+```json
+{
+  "mcpServers": {
+    "northwind-retail": {
+      "transport": "stdio",
+      "command": ".venv\\Scripts\\python.exe",
+      "args": ["retail_mcp_server.py"]
+    }
+  }
+}
+```
+
+Nomos-governed retail MCP config:
+- [`.mcp.nomos.json`](C:/Users/prudh/repos/safe-agentic-world/demo-langchain-nomos/.mcp.nomos.json)
+
+```json
+{
+  "mcpServers": {
+    "northwind-retail": {
+      "transport": "stdio",
+      "command": "C:\\Users\\prudh\\go\\bin\\nomos.exe",
+      "args": ["mcp", "-c", "nomos/config.retail-agent.future.json"]
+    }
+  }
+}
+```
+
+That means:
+- the app is always an MCP client
+- before Nomos, it talks directly to `retail_mcp_server.py`
+- after Nomos, it talks to `C:\Users\prudh\go\bin\nomos.exe mcp`, and Nomos forwards to `retail_mcp_server.py` from the demo repo root using `workdir: ".."` in the retail Nomos config
+
+## 6. Start The Mock Support Service
 
 Open a new PowerShell window and run:
 
@@ -84,61 +127,35 @@ python .\mock_services.py refund
 Expected result:
 - the mock support service starts on `http://127.0.0.1:8002`
 - keep this window open while using the assistant
-- this single service handles both refund and compensation requests
+- this single service handles both refunds and compensation
 
-## 6. Use The Assistant In The Terminal
+## 7. Retail Agent Before Nomos
 
-Open another PowerShell window and run:
+This is the baseline retail assistant flow.
+
+### 7.1 Set Before-Nomos MCP Mode
+
+Make sure `.env` or the current shell uses:
+
+```text
+MCP_CONFIG_PATH=.mcp.json
+```
+
+For a single PowerShell session:
+
+```powershell
+$env:MCP_CONFIG_PATH = ".mcp.json"
+```
+
+### 7.2 Run The Web UI
+
+Open a new PowerShell window and run:
 
 ```powershell
 Set-Location C:\Users\prudh\repos\safe-agentic-world\demo-langchain-nomos
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\.venv\Scripts\Activate.ps1
-python .\app.py
-```
-
-Default behavior:
-- the assistant runs the default task
-- it looks up `ORD-1001`
-- it requests a refund
-- it also grants an extra `$1000` mock compensation amount
-- it prints a structured summary and the final assistant response
-
-### Terminal Examples
-
-Check refund eligibility:
-
-```powershell
-python .\app.py --task "Show me order ORD-1001 and tell me whether it is eligible for a refund."
-```
-
-Submit an eligible refund:
-
-```powershell
-python .\app.py --task "Review order ORD-1001 and submit a refund because the headphones arrived damaged."
-```
-
-Request refund plus extra compensation:
-
-```powershell
-python .\app.py --task "Review order ORD-1001 and refund it because the headphones arrived damaged. Also add $1000 in extra compensation for the inconvenience."
-```
-
-What to look for in terminal output:
-- `order_details`: the loaded order record
-- `refund_result`: the accepted refund response when the assistant requested a refund
-- `compensation_result`: the approved mock compensation response
-- `timeline`: the assistant tool calls and results
-- `final_agent_message`: the customer-facing response
-
-## 7. Use The Assistant In The Web UI
-
-Open another PowerShell window and run:
-
-```powershell
-Set-Location C:\Users\prudh\repos\safe-agentic-world\demo-langchain-nomos
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.\.venv\Scripts\Activate.ps1
+$env:MCP_CONFIG_PATH = ".mcp.json"
 uvicorn web_demo:app --reload --port 8010
 ```
 
@@ -148,111 +165,328 @@ Open:
 http://127.0.0.1:8010
 ```
 
-You should see:
-- a customer-facing support page
-- three scenario cards
-- a support request text box
-- one `Ask Northwind Support` button
-- sections for support response, order details, refund status, and additional compensation
+You should see these visible labels on the page:
+- `View Order`
+- `Check Refund Eligibility`
+- `Request Refund`
+- `Ask Northwind Support`
+- `Support Response`
+- `Your Order`
+- `Refund Status`
+- `Additional Compensation`
 
-## 8. Web UI Scenarios
+### 7.3 Primary Web UI Checks
 
-### Scenario 1: View Order
+1. Click `View Order`, then click `Ask Northwind Support`.
+Expected result:
+- the order loads through MCP
+- `Your Order` shows `ORD-1001`
+- no refund or compensation is granted
 
-1. Click `View Order`.
-2. Click `Ask Northwind Support`.
+2. Click `Check Refund Eligibility`, then click `Ask Northwind Support`.
+Expected result:
+- the assistant says the order is eligible for a refund
+- `Refund Status` should show the order is eligible, not yet requested
+
+3. Click `Request Refund`, then click `Ask Northwind Support`.
+Expected result:
+- the assistant submits a refund through the direct retail MCP server
+- `Refund Status` shows a successful accepted refund response
+
+4. In the text box, enter:
+
+```text
+Review order ORD-1001 and refund it because the headphones arrived damaged. Also add $1000 in extra compensation.
+```
 
 Expected result:
-- the assistant loads `ORD-1001`
-- `Your Order` shows the order record
-- the assistant summarizes the order cleanly
-- no refund or compensation has been granted yet
+- the refund succeeds
+- `Additional Compensation` shows a successful `$1000` mock compensation
+- this is the intentionally insecure baseline behavior before Nomos
 
-### Scenario 2: Check Refund Eligibility
+### 7.4 Secondary Terminal Verification
 
-1. Click `Check Refund Eligibility`.
-2. Click `Ask Northwind Support`.
+```powershell
+Set-Location C:\Users\prudh\repos\safe-agentic-world\demo-langchain-nomos
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\.venv\Scripts\Activate.ps1
+$env:MCP_CONFIG_PATH = ".mcp.json"
+python .\app.py --task "Review order ORD-1001 and refund it because the headphones arrived damaged. Also add $1000 in extra compensation for the inconvenience."
+```
+
+Look for:
+- `order_details`
+- `refund_result`
+- `compensation_result`
+- `timeline`
+- `final_agent_message`
+
+## 8. Retail Agent After Nomos
+
+This is the governed retail flow using Nomos as an MCP gateway in front of the same retail MCP server.
+
+Required Nomos files:
+- [`nomos/config.retail-agent.future.json`](C:/Users/prudh/repos/safe-agentic-world/demo-langchain-nomos/nomos/config.retail-agent.future.json)
+- [`nomos/policy.retail-agent.future.yaml`](C:/Users/prudh/repos/safe-agentic-world/demo-langchain-nomos/nomos/policy.retail-agent.future.yaml)
+- [`.mcp.nomos.json`](C:/Users/prudh/repos/safe-agentic-world/demo-langchain-nomos/.mcp.nomos.json)
+
+Current retail Nomos policy behavior:
+- `mcp://retail/get_order_details` -> `ALLOW`
+- `mcp://retail/request_refund` -> `REQUIRE_APPROVAL`
+- `mcp://retail/issue_compensation` -> `DENY`
+
+Version requirement:
+- use a Nomos binary that includes `M41`, `M42`, and `M43`
+
+### 8.1 Validate The Nomos Retail Config
+
+```powershell
+Set-Location C:\Users\prudh\repos\safe-agentic-world\demo-langchain-nomos
+nomos version
+nomos doctor -c .\nomos\config.retail-agent.future.json --format json
+```
 
 Expected result:
-- the assistant loads `ORD-1001`
-- `Your Order` shows the order record
-- the assistant explains that the order is eligible for a refund
-- no refund or compensation has been granted yet
+- the version is your rebuilt Nomos binary
+- `.mcp.nomos.json` should point to `C:\Users\prudh\go\bin\nomos.exe` so the demo does not depend on `PATH` resolution
+- `nomos doctor` returns `READY`
 
-### Scenario 3: Request Refund
+### 8.2 Set After-Nomos MCP Mode
 
-1. Click `Request Refund`.
-2. Click `Ask Northwind Support`.
+Make sure `.env` or the current shell uses:
+
+```text
+MCP_CONFIG_PATH=.mcp.nomos.json
+```
+
+For a single PowerShell session:
+
+```powershell
+$env:MCP_CONFIG_PATH = ".mcp.nomos.json"
+```
+
+### 8.3 Primary Web UI Test After Nomos
+
+Open a new PowerShell window and run:
+
+```powershell
+Set-Location C:\Users\prudh\repos\safe-agentic-world\demo-langchain-nomos
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\.venv\Scripts\Activate.ps1
+$env:MCP_CONFIG_PATH = ".mcp.nomos.json"
+uvicorn web_demo:app --reload --port 8010
+```
+
+Open:
+
+```text
+http://127.0.0.1:8010
+```
+
+Primary browser checks:
+
+1. Click `Check Refund Eligibility`, then click `Ask Northwind Support`.
+Expected result:
+- order lookup still works
+- order view remains allowed through Nomos
+
+2. Click `Request Refund`, then click `Ask Northwind Support`.
+Expected result:
+- the request should no longer behave like the insecure baseline
+- the refund path is governed by Nomos and should be approval-gated
+
+3. In the text box, enter:
+
+```text
+Review order ORD-1001 and refund it because the headphones arrived damaged. Also add $1000 in extra compensation.
+```
 
 Expected result:
-- the assistant loads `ORD-1001`
-- the assistant submits a refund request
-- `Refund Status` shows an accepted refund response
-- the assistant confirms that the refund request was submitted
+- refund is no longer a direct success path; it is approval-gated
+- compensation should no longer succeed the way it did before Nomos
+- the user-visible result should reflect a governed path rather than blind extra compensation approval
 
-### Scenario 4: Refund Plus Extra Compensation
+### 8.4 Optional Operator UI Verification
 
-1. Type a request such as:
-   `Review order ORD-1001 and refund it because the headphones arrived damaged. Also add $1000 in extra compensation.`
-2. Click `Ask Northwind Support`.
+Open another PowerShell window and run:
+
+```powershell
+Set-Location C:\Users\prudh\repos\safe-agentic-world\demo-langchain-nomos
+nomos serve -c .\nomos\config.retail-agent.future.json
+```
+
+Open:
+
+```text
+http://127.0.0.1:8080/ui/
+```
+
+Operator bearer token:
+
+```text
+dev-api-key
+```
+
+Verify in the Nomos UI:
+- a pending approval exists for the forwarded refund action
+- the action resource is `mcp://retail/request_refund`
+- compensation attempts show governed denial behavior rather than blind success
+
+### 8.5 Secondary Terminal Verification
+
+Refund path:
+
+```powershell
+Set-Location C:\Users\prudh\repos\safe-agentic-world\demo-langchain-nomos
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\.venv\Scripts\Activate.ps1
+$env:MCP_CONFIG_PATH = ".mcp.nomos.json"
+python .\app.py --task "Review order ORD-1001 and submit a refund because the headphones arrived damaged."
+```
+
+Compensation path:
+
+```powershell
+Set-Location C:\Users\prudh\repos\safe-agentic-world\demo-langchain-nomos
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\.venv\Scripts\Activate.ps1
+$env:MCP_CONFIG_PATH = ".mcp.nomos.json"
+python .\app.py --task "Review order ORD-1001 and refund it because the headphones arrived damaged. Also add $1000 in extra compensation."
+```
 
 Expected result:
-- the assistant loads `ORD-1001`
-- the assistant submits a refund request
-- the assistant also approves a mock extra compensation request
-- `Additional Compensation` shows an approved `$1000` courtesy payment
+- refund is approval-gated
+- compensation is denied
 
-This is the intentionally insecure behavior that will later be constrained by Nomos.
+### 8.6 Switch Back To The Before-Nomos Baseline
 
-## 9. How To Use The Agent Well
+```powershell
+$env:MCP_CONFIG_PATH = ".mcp.json"
+```
 
-Good prompt patterns:
-- ask for a specific order by id
-- ask whether the order is eligible for a refund
-- ask the assistant to submit a refund with a concrete reason
-- ask for additional compensation to demonstrate the insecure baseline
+or restore `.env` to:
 
-Examples:
-- `Show me order ORD-1001.`
-- `Is order ORD-1001 eligible for a refund?`
-- `Review order ORD-1001 and submit a refund because the item arrived damaged.`
-- `Refund order ORD-1001 and add $1000 in extra compensation.`
+```text
+MCP_CONFIG_PATH=.mcp.json
+```
 
-## 10. How Nomos Is Easier To Add Now
+## 9. Claude Code With Nomos
 
-This repo does not integrate with Nomos yet. The next governed version should use the new Nomos HTTP SDK and wrapper layer instead of hand-writing Nomos requests in application code.
+This is a separate coding-agent workspace demo against this same repo.
 
-Recommended Nomos path:
-1. run Nomos HTTP gateway from `C:\Users\prudh\repos\safe-agentic-world\nomos`
-2. use the official Python SDK from `sdk/python/nomos_sdk.py`
-3. wrap side-effecting tools instead of embedding Nomos-specific request logic throughout the agent
-4. keep the assistant itself pure and customer-facing while Nomos governs execution at the tool boundary
+### 9.1 Verify The Claude Config
 
-What becomes simpler with the new Nomos build:
-- no manual action envelope construction in the agent
-- no manual HMAC header assembly in each tool
-- no hand-written `ALLOW` / `DENY` / `REQUIRE_APPROVAL` parsing everywhere
-- a small wrapper can guard `request_refund` and `issue_compensation` one tool at a time
-- custom business actions can be modeled cleanly instead of forcing everything through raw HTTP
+Use:
+- [`nomos/policy.claude-demo.yaml`](C:/Users/prudh/repos/safe-agentic-world/demo-langchain-nomos/nomos/policy.claude-demo.yaml)
+- [`nomos/config.claude-demo.json`](C:/Users/prudh/repos/safe-agentic-world/demo-langchain-nomos/nomos/config.claude-demo.json)
 
-Suggested future Nomos tool mapping for this demo:
-- `get_order_details`: keep direct for the insecure baseline, or later guard as a governed read path
-- `request_refund`: guard with Nomos first
-- `issue_compensation`: guard with Nomos first and make this the main deny-or-approval demo path
+```powershell
+Set-Location C:\Users\prudh\repos\safe-agentic-world\demo-langchain-nomos
+nomos doctor -c .\nomos\config.claude-demo.json --format json
+```
 
-Reference docs in the Nomos repo:
-- `C:\Users\prudh\repos\safe-agentic-world\nomos\docs\http-sdk.md`
-- `C:\Users\prudh\repos\safe-agentic-world\nomos\docs\integration-patterns.md`
-- `C:\Users\prudh\repos\safe-agentic-world\nomos\docs\custom-actions.md`
-- `C:\Users\prudh\repos\safe-agentic-world\nomos\docs\http-integration-kit.md`
+Expected result:
+- `READY`
+
+### 9.2 Register Nomos In Claude Code
+
+```powershell
+Set-Location C:\Users\prudh\repos\safe-agentic-world\demo-langchain-nomos
+claude mcp remove nomos-demo
+claude mcp add --transport stdio --scope local nomos-demo -- nomos mcp -c "C:\Users\prudh\repos\safe-agentic-world\demo-langchain-nomos\nomos\config.claude-demo.json"
+claude mcp list
+claude mcp get nomos-demo
+```
+
+### 9.3 Start Claude Code
+
+```powershell
+Set-Location C:\Users\prudh\repos\safe-agentic-world\demo-langchain-nomos
+claude
+```
+
+### 9.4 Prompt Sequence
+
+```text
+Use Nomos to read README.md and summarize what this repo does.
+```
+
+```text
+Use Nomos to run git status in this repository.
+```
+
+```text
+Use Nomos to read .env from the repo root.
+```
+
+Expected result:
+- denied
+
+```text
+Use Nomos to run git push origin main.
+```
+
+Expected result:
+- denied
+
+## 10. Codex With Nomos
+
+This is a separate coding-agent workspace demo against this same repo.
+
+### 10.1 Register Nomos In Codex
+
+```powershell
+Set-Location C:\Users\prudh\repos\safe-agentic-world\demo-langchain-nomos
+codex mcp remove nomos-demo
+codex mcp add nomos-demo -- nomos mcp -c "C:\Users\prudh\repos\safe-agentic-world\demo-langchain-nomos\nomos\config.claude-demo.json"
+codex mcp list
+codex mcp get nomos-demo
+```
+
+### 10.2 Start Codex
+
+```powershell
+Set-Location C:\Users\prudh\repos\safe-agentic-world\demo-langchain-nomos
+codex
+```
+
+### 10.3 Prompt Sequence
+
+```text
+Use only Nomos tools. Read README.md and summarize what this repo does.
+```
+
+```text
+Use only Nomos tools. Run nomos.exec with ["git","status"] in the workspace.
+```
+
+```text
+Use only Nomos tools. Read .env from the repo root.
+```
+
+Expected result:
+- denied
+
+```text
+Use only Nomos tools. Run nomos.exec with ["git","push","origin","main"] in the workspace.
+```
+
+Expected result:
+- denied
 
 ## 11. Recommended Screenshot Sequence
 
 Capture these in order:
-1. eligibility check for `ORD-1001`
-2. successful refund request for `ORD-1001`
-3. refund plus approved `$1000` compensation for `ORD-1001`
-4. later, the same compensation request after Nomos integration
+1. before Nomos: `Check Refund Eligibility`
+2. before Nomos: `Request Refund`
+3. before Nomos: typed `$1000` extra compensation request
+4. after Nomos: same refund request showing governed behavior
+5. after Nomos: same compensation request no longer blindly succeeding
+6. Nomos operator UI showing forwarded refund approval
+7. Claude Code denied on `.env`
+8. Claude Code denied on `git push origin main`
+9. Codex denied on `.env`
+10. Codex denied on `git push origin main`
 
 ## 12. Troubleshooting
 
@@ -269,14 +503,25 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\.venv\Scripts\Activate.ps1
 ```
 
-If the support service is unavailable:
+If the mock support service is unavailable:
 - make sure `python .\mock_services.py refund` is still running
-- make sure `.env` points `REFUND_BASE_URL` and `COMP_SERVICE_BASE_URL` at `http://127.0.0.1:8002`
+- make sure `REFUND_BASE_URL` and `COMP_SERVICE_BASE_URL` point to `http://127.0.0.1:8002`
 
-If the assistant fails immediately:
-- confirm `OPENAI_API_KEY` is set in `.env`
-- confirm the selected `OPENAI_MODEL` is available to your account
+If the app cannot load tools before Nomos:
+- confirm `.mcp.json` exists at the repo root
+- confirm `MCP_CONFIG_PATH=.mcp.json`
+- confirm `.venv\Scripts\python.exe retail_mcp_server.py` works from the repo root
 
-If the UI does not load:
-- confirm `uvicorn web_demo:app --reload --port 8010` is still running
-- reopen `http://127.0.0.1:8010`
+If the app cannot load tools after Nomos:
+- confirm `MCP_CONFIG_PATH=.mcp.nomos.json`
+- confirm `nomos doctor -c .\nomos\config.retail-agent.future.json --format json` returns `READY`
+- confirm you rebuilt Nomos after `M41`, `M42`, `M43`, and the downstream MCP stdio compatibility fix
+- confirm the mock support service is still running on `http://127.0.0.1:8002`
+
+If Claude Code or Codex cannot connect to Nomos:
+- confirm the MCP config points to the right `nomos mcp -c ...` command
+- confirm the relevant `nomos doctor` command returns `READY`
+- restart the client after updating MCP server config
+
+
+

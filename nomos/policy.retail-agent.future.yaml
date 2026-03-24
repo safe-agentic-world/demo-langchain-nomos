@@ -1,0 +1,18 @@
+version: v1
+rules:
+  - id: allow-upstream-order-view
+    action_type: mcp.call
+    resource: mcp://retail/get_order_details
+    decision: ALLOW
+
+  - id: require-approval-upstream-refund
+    action_type: mcp.call
+    resource: mcp://retail/request_refund
+    decision: REQUIRE_APPROVAL
+    obligations:
+      approval_scope_class: action_type_resource
+
+  - id: deny-upstream-compensation
+    action_type: mcp.call
+    resource: mcp://retail/issue_compensation
+    decision: DENY

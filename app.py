@@ -1,17 +1,17 @@
 from __future__ import annotations
 
 import argparse
+import asyncio
 import json
 import os
 from typing import Any
 
 from dotenv import load_dotenv
-from langchain.agents import AgentExecutor, create_tool_calling_agent
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain.agents import create_agent
 from langchain_openai import ChatOpenAI
 
 from prompts import SYSTEM_PROMPT
-from tools import Recorder, build_tools, recorder_context
+from tools import Recorder, build_tools_async, recorder_context
 
 load_dotenv()
 
@@ -30,17 +30,25 @@ def build_llm() -> ChatOpenAI:
     return ChatOpenAI(**kwargs)
 
 
-def _build_executor() -> AgentExecutor:
-    tools = build_tools()
-    prompt = ChatPromptTemplate.from_messages(
-        [
-            ("system", SYSTEM_PROMPT),
-            ("human", "{input}"),
-            MessagesPlaceholder("agent_scratchpad"),
-        ]
+async def _build_agent():
+    return create_agent(
+        model=build_llm(),
+        tools=await build_tools_async(),
+        system_prompt=SYSTEM_PROMPT,
     )
-    agent = create_tool_calling_agent(build_llm(), tools, prompt)
-    return AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+
+def _final_message_text(result: dict[str, Any]) -> str:
+    messages = result.get("messages", [])
+    if not messages:
+        return ""
+    message = messages[-1]
+    content = getattr(message, "content", "")
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        return "".join(part.get("text", "") for part in content if isinstance(part, dict))
+    return str(content)
 
 
 def _build_summary(task: str, result: dict[str, Any], recorder: Recorder) -> dict[str, Any]:
@@ -52,16 +60,20 @@ def _build_summary(task: str, result: dict[str, Any], recorder: Recorder) -> dic
         "compensation_request": recorder.compensation_request,
         "compensation_result": recorder.compensation_result,
         "timeline": recorder.timeline,
-        "final_agent_message": result["output"],
+        "final_agent_message": _final_message_text(result),
     }
 
 
-def run_flow(task: str) -> dict[str, Any]:
+async def _run_flow_async(task: str) -> dict[str, Any]:
     recorder = Recorder()
-    executor = _build_executor()
+    agent = await _build_agent()
     with recorder_context(recorder):
-        result = executor.invoke({"input": task})
+        result = await agent.ainvoke({"messages": [{"role": "user", "content": task}]})
     return _build_summary(task, result, recorder)
+
+
+def run_flow(task: str) -> dict[str, Any]:
+    return asyncio.run(_run_flow_async(task))
 
 
 def run(task: str) -> None:

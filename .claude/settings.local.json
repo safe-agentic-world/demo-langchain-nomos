@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__nomos-demo__nomos_fs_read",
+      "mcp__nomos-demo__nomos_exec",
+      "mcp__nomos-demo__nomos_fs_write",
+      "mcp__nomos__nomos_exec",
+      "mcp__nomos__nomos_fs_read"
+    ]
+  }
+}
