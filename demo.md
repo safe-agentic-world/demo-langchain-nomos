@@ -378,11 +378,11 @@ This is a separate coding-agent workspace demo against this same repo.
 
 Use:
 - [`nomos/policy.claude-demo.yaml`](C:/Users/prudh/repos/safe-agentic-world/demo-langchain-nomos/nomos/policy.claude-demo.yaml)
-- [`nomos/config.claude-demo.json`](C:/Users/prudh/repos/safe-agentic-world/demo-langchain-nomos/nomos/config.claude-demo.json)
+- [`nomos/config.demo.json`](C:/Users/prudh/repos/safe-agentic-world/demo-langchain-nomos/nomos/config.demo.json)
 
 ```powershell
 Set-Location C:\Users\prudh\repos\safe-agentic-world\demo-langchain-nomos
-nomos doctor -c .\nomos\config.claude-demo.json --format json
+nomos doctor -c .\nomos\config.demo.json --format json
 ```
 
 Expected result:
@@ -393,7 +393,7 @@ Expected result:
 ```powershell
 Set-Location C:\Users\prudh\repos\safe-agentic-world\demo-langchain-nomos
 claude mcp remove nomos-demo
-claude mcp add --transport stdio --scope local nomos-demo -- nomos mcp -c "C:\Users\prudh\repos\safe-agentic-world\demo-langchain-nomos\nomos\config.claude-demo.json"
+claude mcp add --transport stdio --scope local nomos-demo -- nomos mcp -c "C:\Users\prudh\repos\safe-agentic-world\demo-langchain-nomos\nomos\config.demo.json"
 claude mcp list
 claude mcp get nomos-demo
 ```
@@ -438,7 +438,7 @@ This is a separate coding-agent workspace demo against this same repo.
 ```powershell
 Set-Location C:\Users\prudh\repos\safe-agentic-world\demo-langchain-nomos
 codex mcp remove nomos-demo
-codex mcp add nomos-demo -- nomos mcp -c "C:\Users\prudh\repos\safe-agentic-world\demo-langchain-nomos\nomos\config.claude-demo.json"
+codex mcp add nomos-demo -- nomos mcp -c "C:\Users\prudh\repos\safe-agentic-world\demo-langchain-nomos\nomos\config.demo.json"
 codex mcp list
 codex mcp get nomos-demo
 ```
